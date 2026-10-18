@@ -210,6 +210,7 @@ Vercel akan otomatis mendeploy setiap ada push ke branch `main`.
 - File `.env` tidak ikut ter-commit ke Git.
 
 ## Pengembangan Lanjutan
+`MASIH TAHAP PERKEMBANGAN`
 
 Dokumen lengkap spesifikasi produk dan desain tersedia di:
 - `PRD_SCC_Game_Area.md` — Product Requirements Document
