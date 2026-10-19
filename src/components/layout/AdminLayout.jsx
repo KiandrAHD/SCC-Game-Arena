@@ -42,7 +42,11 @@ export default function AdminLayout() {
 
     let mounted = true
     const restoreSession = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || !user) {
+        if (mounted) setAuthState('unauthenticated')
+        return
+      }
       const isAdmin = await getAdminState(user)
       if (mounted) setAuthState(isAdmin ? 'authenticated' : 'unauthenticated')
     }

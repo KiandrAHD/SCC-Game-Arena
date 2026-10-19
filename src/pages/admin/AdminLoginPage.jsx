@@ -55,7 +55,14 @@ export default function AdminLoginPage() {
         .maybeSingle()
 
       if (membershipError) {
-        setError('Verifikasi akses admin gagal. Periksa schema dan izin Supabase.')
+        const code = membershipError.code
+        if (code === '42P01' || code === 'PGRST205') {
+          setError('Layanan admin belum dikonfigurasi pada database.')
+        } else if (code === '42501' || membershipError.status === 401 || membershipError.status === 403) {
+          setError('Akses data admin ditolak oleh izin database.')
+        } else {
+          setError('Verifikasi akses admin gagal. Silakan coba lagi.')
+        }
         return
       }
 
