@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import Button from '../../components/ui/Button'
 import { supabase } from '../../lib/supabase'
 import Input from '../../components/ui/Input'
 import Card from '../../components/ui/Card'
-import { LogIn, Mail, Lock, Gamepad2 } from 'lucide-react'
+import { LogIn, Mail, Lock, Gamepad2, Home } from 'lucide-react'
 
 export default function AdminLoginPage() {
   const [formData, setFormData] = useState({
@@ -122,6 +122,10 @@ export default function AdminLoginPage() {
             Masuk
           </Button>
         </form>
+        <Link to="/" className="mt-4 flex items-center justify-center gap-2 text-sm text-muted hover:text-text transition-colors">
+          <Home className="w-4 h-4" />
+          Kembali ke Beranda
+        </Link>
       </Card>
     </div>
   )

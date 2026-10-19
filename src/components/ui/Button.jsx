@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const variants = {
   primary: 'bg-primary text-white hover:bg-primary-hover focus:ring-primary',
   secondary: 'bg-surface text-text border border-border hover:bg-gray-50 focus:ring-primary',
@@ -16,6 +18,9 @@ export default function Button({
   size = 'md',
   loading = false,
   disabled = false,
+  as = 'button',
+  to,
+  type,
   icon: Icon,
   children,
   className = '',
@@ -29,10 +34,34 @@ export default function Button({
     disabled:opacity-50 disabled:cursor-not-allowed
   `
 
+  const combinedClassName = `${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`
+  const isDisabled = disabled || loading
+  const content = loading ? (
+    <span className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
+  ) : Icon ? (
+    <Icon className="w-5 h-5" />
+  ) : null
+
+  if (as === 'link') {
+    return (
+      <Link
+        to={to}
+        className={`${combinedClassName} ${isDisabled ? 'pointer-events-none opacity-50' : ''}`}
+        aria-disabled={isDisabled || undefined}
+        tabIndex={isDisabled ? -1 : undefined}
+        {...props}
+      >
+        {content}
+        {children}
+      </Link>
+    )
+  }
+
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
-      disabled={disabled || loading}
+      className={combinedClassName}
+      type={type}
+      disabled={isDisabled}
       {...props}
     >
       {loading ? (

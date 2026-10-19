@@ -35,10 +35,14 @@ export default function AdminParticipantsPage() {
           <div className="flex gap-2">
             <select className="px-4 py-2.5 rounded-lg border border-border bg-surface text-text">
               <option value="">Semua Kelas</option>
-              <option value="IXA">IX A</option>
-              <option value="IXB">IX B</option>
-              <option value="IXC">IX C</option>
-              <option value="IXD">IX D</option>
+              <option value="IXA">IX-A</option>
+              <option value="IXB">IX-B</option>
+              <option value="IXC">IX-C</option>
+              <option value="IXD">IX-D</option>
+              <option value="IXE">IX-E</option>
+              <option value="IXF">IX-F</option>
+              <option value="IXG">IX-G</option>
+              <option value="IXH">IX-H</option>
             </select>
             <select className="px-4 py-2.5 rounded-lg border border-border bg-surface text-text">
               <option value="">Semua Status</option>

@@ -4,7 +4,7 @@ values (
   'e0000000-0000-0000-0000-000000000001',
   'SCC Game Arena 2026',
   'open',
-  array['IXA', 'IXB', 'IXC', 'IXD', 'IXE', 'IXF'],
+  array['IXA', 'IXB', 'IXC', 'IXD', 'IXE', 'IXF', 'IXG', 'IXH'],
   1,
   40
 ) on conflict (id) do nothing;

@@ -585,7 +585,9 @@ const VALID_CLASSES = [
   'IXC',
   'IXD',
   'IXE',
-  'IXF'
+  'IXF',
+  'IXG',
+  'IXH'
   // Sesuaikan dengan data dari SMP
 ];
 ```

@@ -6,6 +6,7 @@ import {
   Settings,
   LogOut,
   Gamepad2,
+  Home,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
@@ -75,7 +76,7 @@ export default function AdminLayout() {
     <div className="min-h-screen bg-background flex">
       <aside className="w-64 bg-dark text-white flex flex-col">
         <div className="p-4 border-b border-gray-700">
-          <Link to="/admin" className="flex items-center gap-2 font-bold text-lg"><Gamepad2 className="w-6 h-6 text-primary" /><span>SCC Admin</span></Link>
+          <Link to="/admin" className="flex items-center gap-2 font-bold text-lg"><Gamepad2 className="w-6 h-6 text-primary" /><span>SCC Admin</span></Link><Link to="/" className="flex items-center gap-3 px-3 py-2.5 mt-4 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"><Home className="w-5 h-5" /><span>Kembali ke Beranda</span></Link>
         </div>
         <nav className="flex-1 p-4"><ul className="space-y-1">
           {navItems.map(({ path, label, icon: Icon, end }) => (

@@ -1,16 +1,21 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Card from '../../components/ui/Card'
 import { User, Hash, BookOpen, ArrowRight } from 'lucide-react'
+import { registerParticipant, saveParticipantToken, userMessage } from '../../lib/participantApi'
 
 const CLASS_OPTIONS = [
   { value: '', label: 'Pilih kelas' },
-  { value: 'IXA', label: 'IX A' },
-  { value: 'IXB', label: 'IX B' },
-  { value: 'IXC', label: 'IX C' },
-  { value: 'IXD', label: 'IX D' },
+  { value: 'IXA', label: 'IX-A' },
+  { value: 'IXB', label: 'IX-B' },
+  { value: 'IXC', label: 'IX-C' },
+  { value: 'IXD', label: 'IX-D' },
+  { value: 'IXE', label: 'IX-E' },
+  { value: 'IXF', label: 'IX-F' },
+  { value: 'IXG', label: 'IX-G' },
+  { value: 'IXH', label: 'IX-H' },
 ]
 
 export default function RegisterPage() {
@@ -22,6 +27,7 @@ export default function RegisterPage() {
   })
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -39,13 +45,13 @@ export default function RegisterPage() {
     const newErrors = {}
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Nama lengkap wajib diisi'
-    } else if (formData.fullName.trim().length < 3) {
-      newErrors.fullName = 'Nama minimal 3 karakter'
+    } else if (formData.fullName.trim().length > 40) {
+      newErrors.fullName = 'Nama maksimal 40 karakter'
     }
     if (!formData.attendanceNumber) {
       newErrors.attendanceNumber = 'Nomor absen wajib diisi'
-    } else if (isNaN(formData.attendanceNumber) || parseInt(formData.attendanceNumber) < 1) {
-      newErrors.attendanceNumber = 'Nomor absen harus berupa angka positif'
+    } else if (!/^\d+$/.test(formData.attendanceNumber) || Number(formData.attendanceNumber) < 1 || Number(formData.attendanceNumber) > 40) {
+      newErrors.attendanceNumber = 'Nomor absen harus berupa bilangan bulat 1-40'
     }
     if (!formData.className) {
       newErrors.className = 'Kelas wajib dipilih'
@@ -62,13 +68,26 @@ export default function RegisterPage() {
     if (!validate()) return
 
     setIsSubmitting(true)
-    
-    // Placeholder - belum ada backend integration
-    // TODO: Implement registration with Supabase
-    setTimeout(() => {
+    setErrors({})
+    try {
+      const response = await registerParticipant({
+        full_name: formData.fullName.trim(),
+        attendance_number: Number(formData.attendanceNumber),
+        class_name: formData.className,
+      })
+      if (!response?.token) throw new Error('Respons server tidak valid')
+      saveParticipantToken(response.token)
+      sessionStorage.setItem('scc_game_participant_id', response.participant_id || '')
+      sessionStorage.setItem('scc_game_display_name', response.display_name || '')
+      navigate('/rules', { replace: true })
+    } catch (error) {
+      const details = error.details || {}
+      setErrors({
+        form: details.full_name || details.attendance_number || details.class_name || userMessage(error),
+      })
+    } finally {
       setIsSubmitting(false)
-      alert('Fitur registrasi belum tersedia. Backend belum dikonfigurasi.')
-    }, 500)
+    }
   }
 
   return (
@@ -85,7 +104,7 @@ export default function RegisterPage() {
           <Input
             label="Nama Lengkap"
             name="fullName"
-            placeholder="Masukkan nama lengkap"
+            placeholder="Contoh: Ahmad Batu"
             value={formData.fullName}
             onChange={handleChange}
             error={errors.fullName}
@@ -153,6 +172,8 @@ export default function RegisterPage() {
           {errors.agreeToRules && (
             <p className="text-sm text-red-500">{errors.agreeToRules}</p>
           )}
+
+          {errors.form && <p className="text-sm text-red-500" role="alert">{errors.form}</p>}
 
           <Button
             type="submit"
