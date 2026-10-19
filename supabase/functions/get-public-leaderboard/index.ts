@@ -1,7 +1,7 @@
 import { json, fail, cors, client } from '../_shared/core.ts';
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
+  if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
   if (req.method !== 'GET') return fail('Method not allowed', 405);
 
   const url = new URL(req.url);
@@ -13,8 +13,8 @@ Deno.serve(async (req) => {
   if (!event) return json({ leaderboard: [], updated_at: new Date().toISOString() });
   const { data, error } = await db
     .from('public_leaderboard')
-    .eq('event_id', event.id)
     .select('rank,display_name,class_name,total_score,average_accuracy')
+    .eq('event_id', event.id)
     .order('rank', { ascending: true })
     .limit(limit);
 

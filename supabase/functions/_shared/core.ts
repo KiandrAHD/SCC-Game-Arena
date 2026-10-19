@@ -1,17 +1,27 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-const allowedOrigin =
-  Deno.env.get("FRONTEND_ORIGIN") || "http://localhost:5173";
-export const cors = {
-  "Access-Control-Allow-Origin": allowedOrigin,
-  Vary: "Origin",
-  "Access-Control-Allow-Headers":
-    "authorization, content-type, idempotency-key",
-  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+const allowedOrigins = new Set(
+  (Deno.env.get("FRONTEND_ORIGINS") || "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean),
+);
+const corsHeaders = (req: Request): HeadersInit => {
+  const origin = req.headers.get("Origin");
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Headers": "authorization, content-type, idempotency-key",
+    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+    Vary: "Origin",
+  };
+  if (origin && allowedOrigins.has(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
 };
-export const json = (body: unknown, status = 200) =>
+export const cors = corsHeaders;
+export const json = (body: unknown, status = 200, req?: Request) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors, "Content-Type": "application/json" },
+    headers: { ...corsHeaders(req || new Request("http://localhost")), "Content-Type": "application/json" },
   });
 export const fail = (error: string, status = 400, details?: unknown) =>
   json({ error, ...(details ? { details } : {}) }, status);

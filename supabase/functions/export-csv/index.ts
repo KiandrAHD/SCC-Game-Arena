@@ -12,7 +12,7 @@ function sanitizeCsvCell(v: unknown): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
   if (req.method !== "GET") return fail("Method not allowed", 405);
 
   const adm = await admin(req);

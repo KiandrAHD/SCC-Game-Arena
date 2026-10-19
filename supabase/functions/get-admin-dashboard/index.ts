@@ -1,7 +1,7 @@
 import { json, fail, cors, client, admin } from "../_shared/core.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, { headers: cors(req) });
   if (req.method !== "GET") return fail("Method not allowed", 405);
 
   const adm = await admin(req);
