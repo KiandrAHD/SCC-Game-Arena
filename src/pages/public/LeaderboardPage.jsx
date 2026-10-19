@@ -2,7 +2,6 @@ import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import { Trophy, Medal, Users, Gamepad2 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 export default function LeaderboardPage() {
   // Placeholder data

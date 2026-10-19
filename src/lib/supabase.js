@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-let supabase = null
+let supabaseInstance = null
 
 function getSupabase() {
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -14,14 +14,15 @@ function getSupabase() {
     return null
   }
   
-  if (!supabase) {
-    supabase = createClient(supabaseUrl, supabaseAnonKey)
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
   }
   
-  return supabase
+  return supabaseInstance
 }
 
 export const supabaseClient = getSupabase()
+export const supabase = supabaseClient
 
 export function isSupabaseConfigured() {
   return Boolean(supabaseUrl && supabaseAnonKey)

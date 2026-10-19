@@ -1,8 +1,7 @@
-import { Link } from 'react-router-dom'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
-import { Zap, Brain, ListChecks, ArrowRight, Target, Clock3, Heart, AlertTriangle } from 'lucide-react'
+import { Zap, Brain, ListChecks, ArrowRight, Target, Clock3, AlertTriangle } from 'lucide-react'
 
 const rules = [
   {

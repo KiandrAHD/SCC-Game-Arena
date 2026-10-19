@@ -1,0 +1,135 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+const allowedOrigin =
+  Deno.env.get("FRONTEND_ORIGIN") || "http://localhost:5173";
+export const cors = {
+  "Access-Control-Allow-Origin": allowedOrigin,
+  Vary: "Origin",
+  "Access-Control-Allow-Headers":
+    "authorization, content-type, idempotency-key",
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+};
+export const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+export const fail = (error: string, status = 400, details?: unknown) =>
+  json({ error, ...(details ? { details } : {}) }, status);
+export function client() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
+}
+export async function body(req: Request) {
+  const declared = Number(req.headers.get("content-length") || 0);
+  if (declared > 32768) throw Error("BODY_TOO_LARGE");
+  if (!req.body) return {};
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > 32768) throw Error("BODY_TOO_LARGE");
+    chunks.push(value);
+  }
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+export function token(req: Request, b?: any) {
+  const h = req.headers.get("authorization") || "";
+  return h.startsWith("Bearer ")
+    ? h.slice(7)
+    : b?.participant_token || b?.token;
+}
+export async function participant(req: Request, b?: any) {
+  const raw = token(req, b);
+  if (typeof raw !== "string" || raw.length < 32) return null;
+  const hash = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(raw),
+  );
+  const hex = [...new Uint8Array(hash)]
+    .map((x) => x.toString(16).padStart(2, "0"))
+    .join("");
+  const db = client();
+  const { data } = await db
+    .from("participants")
+    .select("*")
+    .eq("entry_token_hash", hex)
+    .is("revoked_at", null)
+    .gt("token_expires_at", new Date().toISOString())
+    .maybeSingle();
+  return data;
+}
+export async function admin(req: Request) {
+  const h = req.headers.get("authorization");
+  if (!h?.startsWith("Bearer ")) return null;
+  const db = client();
+  const {
+    data: { user },
+  } = await db.auth.getUser(h.slice(7));
+  if (!user) return null;
+  const { data } = await db
+    .from("admin_users")
+    .select("id,role")
+    .eq("id", user.id)
+    .maybeSingle();
+  return data ? user : null;
+}
+export const gameOrder = ["reflex", "memory", "quiz"];
+export function score(game: string, m: any, answers: any[] = []) {
+  if (game === "reflex") {
+    if (
+      !Number.isInteger(m?.duration_ms) || m.duration_ms < 0 || m.duration_ms > 3600000 ||
+      !Number.isInteger(m?.targets_hit) ||
+      !Number.isInteger(m?.targets_missed) ||
+      !Number.isInteger(m?.traps_hit) ||
+      m.targets_hit < 0 ||
+      m.targets_missed < 0 ||
+      m.traps_hit < 0 ||
+      m.targets_hit + m.targets_missed !== 20
+    )
+      throw Error("INVALID_METRICS");
+    return {
+      score: Math.max(0, Math.min(200, m.targets_hit * 10 - m.traps_hit * 5)),
+      accuracy: m.targets_hit * 5,
+      duration: m.duration_ms,
+      metrics: m,
+    };
+  }
+  if (game === "memory") {
+    if (
+      !Number.isInteger(m?.rounds_correct) ||
+      !Number.isInteger(m?.mistakes) ||
+      m.rounds_correct < 0 ||
+      m.rounds_correct > 8 ||
+      m.mistakes < 0 ||
+      m.mistakes > 3 ||
+      !Number.isInteger(m?.duration_ms) || m.duration_ms < 0 || m.duration_ms > 3600000
+    )
+      throw Error("INVALID_METRICS");
+    return {
+      score: m.rounds_correct * 25,
+      accuracy: m.rounds_correct * 12.5,
+      duration: m.duration_ms,
+      metrics: m,
+    };
+  }
+  const correct = answers.filter((x) => x.correct).length;
+  return {
+    score: correct * 20,
+    accuracy: correct * 10,
+    duration: Math.max(...answers.map((x) => x.response_time_ms || 0), 0),
+    metrics: { correct, answered: answers.length },
+  };
+}
+export function csv(v: unknown) {
+  const s = String(v ?? "");
+  return /^[=+\-@]/.test(s) ? "'" + s : s.replaceAll('"', '""');
+}

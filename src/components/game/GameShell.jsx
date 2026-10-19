@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import Card from '../ui/Card'
 import Badge from '../ui/Badge'
 import Timer from '../ui/Timer'
@@ -9,15 +8,12 @@ export default function GameShell({
   gameNumber,
   children,
   score = 0,
-  maxScore = 200,
   timerDuration,
   onTimerExpire,
   isRunning = false,
   progress,
   maxProgress,
 }) {
-  const [gameState, setGameState] = useState('ready') // ready, playing, paused, finished
-
   return (
     <div className="max-w-4xl mx-auto">
       {/* Game Header */}

@@ -1,7 +1,6 @@
 import Card from '../../components/ui/Card'
-import Badge from '../../components/ui/Badge'
 import Input from '../../components/ui/Input'
-import { Users, Search, Download, MoreVertical } from 'lucide-react'
+import { Users, Search, Download } from 'lucide-react'
 import { useState } from 'react'
 
 const participants = []

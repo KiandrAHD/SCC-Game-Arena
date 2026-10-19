@@ -1,9 +1,7 @@
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import Timer from '../../components/ui/Timer'
-import Progress from '../../components/ui/Progress'
-import { Zap, ArrowLeft, Play, Pause } from 'lucide-react'
+import { Zap, ArrowLeft, Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 export default function ReflexRushPage() {

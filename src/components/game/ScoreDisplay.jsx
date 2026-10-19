@@ -10,7 +10,7 @@ export default function ScoreDisplay({ scores = [], totalScore = 0, maxScore = 6
   return (
     <div className="space-y-4">
       {/* Individual Scores */}
-      {scores.map((score, index) => {
+      {scores.map((score) => {
         const Icon = gameIcons[score.gameKey] || Trophy
         const percentage = score.maxScore ? (score.value / score.maxScore) * 100 : 0
         

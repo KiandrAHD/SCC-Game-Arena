@@ -1,6 +1,5 @@
 import Card from '../../components/ui/Card'
-import Badge from '../../components/ui/Badge'
-import { Trophy, Download, Search } from 'lucide-react'
+import { Trophy, Download } from 'lucide-react'
 import { useState } from 'react'
 
 const leaderboard = []

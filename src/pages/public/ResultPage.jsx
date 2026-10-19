@@ -3,7 +3,6 @@ import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import Progress from '../../components/ui/Progress'
 import { Trophy, ArrowRight, RotateCcw, Medal } from 'lucide-react'
-import { Link } from 'react-router-dom'
 
 export default function ResultPage() {
   // Placeholder data
