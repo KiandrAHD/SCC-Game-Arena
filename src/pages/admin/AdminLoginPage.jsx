@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Button from '../../components/ui/Button'
+import { supabase } from '../../lib/supabase'
 import Input from '../../components/ui/Input'
 import Card from '../../components/ui/Card'
 import { LogIn, Mail, Lock, Gamepad2 } from 'lucide-react'
@@ -11,6 +13,7 @@ export default function AdminLoginPage() {
   })
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const navigate = useNavigate()
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -21,12 +24,53 @@ export default function AdminLoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
-    // Placeholder - TODO: Implement Supabase Auth
-    setTimeout(() => {
+    setError('')
+
+    try {
+      if (!supabase) {
+        setError('Layanan login belum dikonfigurasi. Periksa konfigurasi Supabase aplikasi.')
+        return
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim(),
+        password: formData.password,
+      })
+      if (signInError) {
+        setError('Email atau kata sandi tidak valid.')
+        return
+      }
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        setError('Sesi login tidak dapat diverifikasi. Silakan coba lagi.')
+        return
+      }
+
+      const { data: admin, error: membershipError } = await supabase
+        .from('admin_users')
+        .select('role')
+        .eq('id', user.id)
+        .in('role', ['admin', 'super_admin'])
+        .maybeSingle()
+
+      if (membershipError) {
+        setError('Verifikasi akses admin gagal. Periksa schema dan izin Supabase.')
+        return
+      }
+
+      if (!admin) {
+        await supabase.auth.signOut()
+        setError('Akun ini tidak memiliki akses admin.')
+        return
+      }
+
+      navigate('/admin', { replace: true })
+    } catch {
+      setError('Login gagal karena gangguan layanan. Silakan coba lagi.')
+    } finally {
       setIsSubmitting(false)
-      setError('Fitur login belum tersedia. Konfigurasi Supabase Auth terlebih dahulu.')
-    }, 500)
+    }
   }
 
   return (

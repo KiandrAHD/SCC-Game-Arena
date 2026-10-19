@@ -1,29 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
 
-let supabaseInstance = null
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
 
-function getSupabase() {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn(
-      'Supabase tidak terkonfigurasi. ' +
-      'Pastikan VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY sudah diatur di .env'
-    )
-    return null
-  }
-  
-  if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
-  }
-  
-  return supabaseInstance
-}
+// One browser client is shared by auth, pages, and route guards.
+export const supabase = isSupabaseConfigured
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    })
+  : null
 
-export const supabaseClient = getSupabase()
-export const supabase = supabaseClient
-
-export function isSupabaseConfigured() {
-  return Boolean(supabaseUrl && supabaseAnonKey)
-}
+export const supabaseClient = supabase
