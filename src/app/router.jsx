@@ -10,6 +10,7 @@ import MemoryRushPage from '../pages/public/MemoryRushPage'
 import QuizBlitzPage from '../pages/public/QuizBlitzPage'
 import ResultPage from '../pages/public/ResultPage'
 import LeaderboardPage from '../pages/public/LeaderboardPage'
+import PrepareGamePage from '../pages/public/PrepareGamePage'
 
 // Admin pages
 import AdminLoginPage from '../pages/admin/AdminLoginPage'
@@ -17,6 +18,7 @@ import AdminDashboardPage from '../pages/admin/AdminDashboardPage'
 import AdminParticipantsPage from '../pages/admin/AdminParticipantsPage'
 import AdminResultsPage from '../pages/admin/AdminResultsPage'
 import AdminSettingsPage from '../pages/admin/AdminSettingsPage'
+import AdminActivitiesPage from '../pages/admin/AdminActivitiesPage'
 
 export const routes = [
   {
@@ -26,6 +28,8 @@ export const routes = [
       { index: true, element: <LandingPage /> },
       { path: 'register', element: <RegisterPage /> },
       { path: 'rules', element: <RulesPage /> },
+      { path: 'start-game', element: <PrepareGamePage /> },
+      { path: 'prepare/:gameKey', element: <PrepareGamePage /> },
       { path: 'play/reflex', element: <ReflexRushPage /> },
       { path: 'play/memory', element: <MemoryRushPage /> },
       { path: 'play/quiz', element: <QuizBlitzPage /> },
@@ -42,6 +46,7 @@ export const routes = [
       { path: 'participants', element: <AdminParticipantsPage /> },
       { path: 'results', element: <AdminResultsPage /> },
       { path: 'settings', element: <AdminSettingsPage /> },
+      { path: 'activities', element: <AdminActivitiesPage /> },
     ],
   },
 ]

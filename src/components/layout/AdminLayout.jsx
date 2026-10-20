@@ -4,6 +4,7 @@ import {
   Users,
   Trophy,
   Settings,
+  Activity,
   LogOut,
   Gamepad2,
   Home,
@@ -16,6 +17,7 @@ const navItems = [
   { path: '/admin/participants', label: 'Peserta', icon: Users },
   { path: '/admin/results', label: 'Hasil', icon: Trophy },
   { path: '/admin/settings', label: 'Pengaturan', icon: Settings },
+  { path: '/admin/activities', label: 'Aktivitas Peserta', icon: Activity },
 ]
 
 async function getAdminState(user) {

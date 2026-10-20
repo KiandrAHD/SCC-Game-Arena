@@ -1,94 +1,17 @@
+import { useCallback, useEffect, useState } from 'react'
 import Card from '../../components/ui/Card'
 import Input from '../../components/ui/Input'
-import { Users, Search, Download } from 'lucide-react'
-import { useState } from 'react'
+import Button from '../../components/ui/Button'
+import { Users, Search, Download, Pencil, Trash2 } from 'lucide-react'
+import { supabase } from '../../lib/supabase'
 
-const participants = []
-
+async function adminCall(name, options = {}) { const { data, error } = await supabase.functions.invoke(name, options); if (error) throw error; return data }
 export default function AdminParticipantsPage() {
-  const [searchQuery, setSearchQuery] = useState('')
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-text">Manajemen Peserta</h1>
-          <p className="text-muted">Daftar peserta yang terdaftar</p>
-        </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-gray-50 transition-colors text-sm font-medium text-text">
-          <Download className="w-4 h-4" />
-          Ekspor CSV
-        </button>
-      </div>
-
-      {/* Search & Filter */}
-      <Card className="mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <Input
-              placeholder="Cari nama atau nomor absen..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              icon={Search}
-            />
-          </div>
-          <div className="flex gap-2">
-            <select className="px-4 py-2.5 rounded-lg border border-border bg-surface text-text">
-              <option value="">Semua Kelas</option>
-              <option value="IXA">IX-A</option>
-              <option value="IXB">IX-B</option>
-              <option value="IXC">IX-C</option>
-              <option value="IXD">IX-D</option>
-              <option value="IXE">IX-E</option>
-              <option value="IXF">IX-F</option>
-              <option value="IXG">IX-G</option>
-              <option value="IXH">IX-H</option>
-            </select>
-            <select className="px-4 py-2.5 rounded-lg border border-border bg-surface text-text">
-              <option value="">Semua Status</option>
-              <option value="registered">Belum Mulai</option>
-              <option value="playing">Sedang Bermain</option>
-              <option value="completed">Selesai</option>
-            </select>
-          </div>
-        </div>
-      </Card>
-
-      {/* Participants Table */}
-      <Card>
-        {participants.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-border">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Nama</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Kelas</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Absen</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Game 1</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Game 2</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Game 3</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Total</th>
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-muted">Status</th>
-                  <th className="text-right py-3 px-4 text-sm font-semibold text-muted">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Placeholder rows */}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <Users className="w-16 h-16 text-muted mx-auto mb-4 opacity-50" />
-            <h2 className="text-lg font-semibold text-text mb-2">
-              Belum Ada Peserta
-            </h2>
-            <p className="text-muted">
-              Peserta akan muncul di sini setelah mendaftar
-            </p>
-          </div>
-        )}
-      </Card>
-    </div>
-  )
+  const [query, setQuery] = useState(''); const [className, setClassName] = useState(''); const [status, setStatus] = useState(''); const [page, setPage] = useState(1); const [data, setData] = useState(null); const [error, setError] = useState(''); const [editing, setEditing] = useState(null); const [loading, setLoading] = useState(true)
+  const load = useCallback(async () => { setLoading(true); setError(''); try { setData(await adminCall('get-admin-participants', { body: { search: query, class: className, status, page, limit: 25 } })) } catch (e) { setError(e.message || 'Gagal memuat peserta') } finally { setLoading(false) } }, [query, className, status, page])
+  useEffect(() => { load() }, [load])
+  const remove = async (participant) => { if (!window.confirm(`Hapus peserta ${participant.display_name}? Tindakan ini dicatat dan tidak dapat dibatalkan.`)) return; try { await adminCall('admin-delete-participant', { body: { participant_id: participant.id } }); load() } catch (e) { setError(e.message || 'Gagal menghapus peserta') } }
+  const update = async (e) => { e.preventDefault(); try { await adminCall('admin-update-participant', { body: { participant_id: editing.id, full_name: editing.full_name, attendance_number: Number(editing.attendance_number), class_name: editing.class_name } }); setEditing(null); load() } catch (e) { setError(e.message || 'Gagal mengubah peserta') } }
+  const rows = data?.participants || []; const pagination = data?.pagination
+  return <div><div className="flex items-center justify-between mb-8"><div><h1 className="text-2xl font-bold text-text">Manajemen Peserta</h1><p className="text-muted">Data peserta dan skor resmi dari server</p></div><Button variant="secondary" icon={Download} onClick={async () => { const result = await adminCall('export-csv', { method: 'GET' }); const blob = new Blob([result], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'peserta.csv'; a.click() }}>Ekspor CSV</Button></div><Card className="mb-6"><div className="flex flex-col sm:flex-row gap-3"><Input placeholder="Cari nama..." value={query} onChange={(e) => { setPage(1); setQuery(e.target.value) }} icon={Search} /><select value={className} onChange={(e) => { setPage(1); setClassName(e.target.value) }} className="px-3 border rounded-lg"><option value="">Semua kelas</option>{['IXA','IXB','IXC','IXD','IXE','IXF','IXG','IXH'].map((x) => <option key={x}>{x}</option>)}</select><select value={status} onChange={(e) => { setPage(1); setStatus(e.target.value) }} className="px-3 border rounded-lg"><option value="">Semua status</option><option value="registered">Belum mulai</option><option value="completed">Selesai</option></select></div></Card><Card>{loading ? <p className="py-12 text-center">Memuat peserta...</p> : error ? <div className="py-12 text-center text-red-600"><p>{error}</p><Button className="mt-3" onClick={load}>Coba Lagi</Button></div> : !rows.length ? <div className="py-12 text-center"><Users className="mx-auto mb-3 opacity-50" /><p>Belum ada peserta.</p></div> : <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b"><th className="p-3 text-left">Nama</th><th className="p-3">Kelas/Absen</th><th className="p-3">Reflex</th><th className="p-3">Memory</th><th className="p-3">Quiz</th><th className="p-3">Total</th><th className="p-3">Aksi</th></tr></thead><tbody>{rows.map((r) => <tr key={r.id} className="border-b"><td className="p-3">{r.display_name}</td><td className="p-3">{r.class_name}/{r.attendance_number}</td><td className="p-3 text-center">{r.scores.reflex ?? '—'}</td><td className="p-3 text-center">{r.scores.memory ?? '—'}</td><td className="p-3 text-center">{r.scores.quiz ?? '—'}</td><td className="p-3 text-center font-bold">{r.total_score}</td><td className="p-3 flex gap-2"><Button size="sm" variant="ghost" icon={Pencil} onClick={() => setEditing(r)}>Edit</Button><Button size="sm" variant="danger" icon={Trash2} onClick={() => remove(r)}>Hapus</Button></td></tr>)}</tbody></table></div>}<div className="flex justify-between mt-4"><span>Halaman {pagination?.page || 1} / {pagination?.total_pages || 1}</span><div><Button size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>Sebelumnya</Button><Button size="sm" className="ml-2" disabled={!pagination || page >= pagination.total_pages} onClick={() => setPage(page + 1)}>Berikutnya</Button></div></div></Card>{editing && <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4"><form onSubmit={update} className="bg-white rounded-xl p-6 w-full max-w-md space-y-3"><h2 className="text-xl font-bold">Edit peserta</h2><Input label="Nama" value={editing.full_name} onChange={(e) => setEditing({ ...editing, full_name: e.target.value })} /><Input label="Absen" type="number" value={editing.attendance_number} onChange={(e) => setEditing({ ...editing, attendance_number: e.target.value })} /><Input label="Kelas" value={editing.class_name} onChange={(e) => setEditing({ ...editing, class_name: e.target.value })} /><Button type="submit">Simpan</Button><Button type="button" variant="ghost" onClick={() => setEditing(null)}>Batal</Button></form></div>}</div>
 }

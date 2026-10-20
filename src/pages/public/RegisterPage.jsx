@@ -77,9 +77,9 @@ export default function RegisterPage() {
       })
       if (!response?.token) throw new Error('Respons server tidak valid')
       saveParticipantToken(response.token)
-      sessionStorage.setItem('scc_game_participant_id', response.participant_id || '')
-      sessionStorage.setItem('scc_game_display_name', response.display_name || '')
-      navigate('/rules', { replace: true })
+      localStorage.setItem('scc_game_participant_id', response.participant_id || '')
+      localStorage.setItem('scc_game_display_name', response.display_name || '')
+      navigate('/start-game', { replace: true })
     } catch (error) {
       const details = error.details || {}
       setErrors({
