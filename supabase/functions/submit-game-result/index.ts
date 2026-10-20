@@ -124,8 +124,11 @@ Deno.serve(async (req) => {
           (a) =>
             typeof a?.question_id !== "string" ||
             !Number.isInteger(a?.selected_index) ||
-            a.selected_index < 0 ||
-            a.selected_index > 20,
+            a.selected_index < -1 ||
+            a.selected_index > 20 ||
+            !Number.isInteger(a?.response_time_ms) ||
+            a.response_time_ms < 0 ||
+            a.response_time_ms > 10000,
         )
       ) {
         return fail("Jawaban kuis tidak valid", 400);
@@ -155,13 +158,12 @@ Deno.serve(async (req) => {
         const question = dbMap.get(ans.question_id);
         const correctIdx = question?.correct_option_index;
         const options = Array.isArray(question?.options) ? question.options : [];
-        if (!Number.isInteger(ans.selected_index) || ans.selected_index < 0 || ans.selected_index >= options.length) {
+        if (ans.selected_index !== -1 && (ans.selected_index < 0 || ans.selected_index >= options.length)) {
           throw new Error("INVALID_OPTION");
         }
         return {
           ...ans,
-          correct:
-            correctIdx !== undefined && ans.selected_index === correctIdx,
+          correct: ans.selected_index !== -1 && correctIdx !== undefined && ans.selected_index === correctIdx,
         };
       });
 

@@ -18,17 +18,19 @@ Deno.serve(async (req) => {
     return fail("Invalid game key", 400);
 
   const db = client();
-  const { data: event } = await db
+  const { data: event, error: eventError } = await db
     .from("events")
     .select("status")
     .eq("id", p.event_id)
     .single();
+  if (eventError) return fail("Gagal membaca status kompetisi", 500);
   if (event?.status !== "open") return fail("Kompetisi belum dibuka atau sudah ditutup", 403);
 
-  const { data: priorResults } = await db
+  const { data: priorResults, error: priorResultsError } = await db
     .from("game_results")
     .select("game_key")
     .eq("participant_id", p.id);
+  if (priorResultsError) return fail("Gagal membaca progres game", 500);
   const done = new Set((priorResults || []).map((r) => r.game_key));
 
   if (p.status === "completed" || p.status === "disqualified")
@@ -54,11 +56,12 @@ Deno.serve(async (req) => {
   if (gameKey === "quiz" && (!done.has("reflex") || !done.has("memory")))
     return fail("Harus menyelesaikan Memory Rush terlebih dahulu", 400);
 
-  const { data: settings } = await db
+  const { data: settings, error: settingsError } = await db
     .from("competition_settings")
     .select("quiz_questions_count")
     .eq("event_id", p.event_id)
     .maybeSingle();
+  if (settingsError) return fail("Gagal membaca pengaturan kompetisi", 500);
   const quizCount = settings?.quiz_questions_count ?? 10;
 
   let challengeMetadata: Record<string, unknown> = {};
@@ -69,12 +72,13 @@ Deno.serve(async (req) => {
   }> = [];
 
   if (gameKey === "quiz") {
-    const { data: questions } = await db
+    const { data: questions, error: questionsError } = await db
       .from("quiz_questions")
       .select("id,question,options")
       .eq("event_id", p.event_id)
       .eq("is_active", true)
       .limit(quizCount);
+    if (questionsError) return fail("Gagal membaca bank soal", 500);
     if (!questions || questions.length < quizCount)
       return fail("Bank soal tidak mencukupi", 500);
     challengeMetadata = { question_ids: questions.map((q) => q.id) };
@@ -118,7 +122,8 @@ Deno.serve(async (req) => {
       : gameKey === "memory"
         ? "playing_memory"
         : "playing_quiz";
-  await db.from("participants").update({ status: nextStatus }).eq("id", p.id);
+  const { error: participantUpdateError } = await db.from("participants").update({ status: nextStatus }).eq("id", p.id);
+  if (participantUpdateError) return fail("Gagal memperbarui status peserta", 500);
 
   if (gameKey === "quiz") {
     return json({

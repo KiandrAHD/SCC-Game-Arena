@@ -1,90 +1,22 @@
+import { useEffect, useRef, useState } from 'react'
 import Card from '../../components/ui/Card'
-import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import { Zap, ArrowLeft, Play } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import Badge from '../../components/ui/Badge'
+import { useGameSession, elapsedMs } from '../../hooks/useGameSession'
 
+const TOTAL = 20
 export default function ReflexRushPage() {
-  return (
-    <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Link to="/rules" className="text-muted hover:text-text transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-red-500" />
-            <span className="font-bold text-text">Reflex Rush</span>
-            <Badge variant="primary">Game 1</Badge>
-          </div>
-          <div className="w-5" /> {/* Spacer */}
-        </div>
-
-        {/* Game Info Card */}
-        <Card className="text-center mb-6">
-          <div className="inline-flex p-4 rounded-full bg-red-100 mb-4">
-            <Zap className="w-12 h-12 text-red-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-text mb-2">Reflex Rush</h1>
-          <p className="text-muted mb-6">
-            Klik target merah secepat mungkin. Hindari jebakan abu-abu!
-          </p>
-          
-          <div className="flex justify-center gap-6 mb-6 text-sm">
-            <div>
-              <div className="text-2xl font-bold text-text">40</div>
-              <div className="text-muted">detik</div>
-            </div>
-            <div className="w-px bg-border" />
-            <div>
-              <div className="text-2xl font-bold text-text">20</div>
-              <div className="text-muted">target</div>
-            </div>
-            <div className="w-px bg-border" />
-            <div>
-              <div className="text-2xl font-bold text-text">200</div>
-              <div className="text-muted">max poin</div>
-            </div>
-          </div>
-
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-left text-sm">
-            <p className="font-semibold text-amber-800 mb-1">Aturan:</p>
-            <ul className="text-amber-700 space-y-0.5">
-              <li>• Target benar: +10 poin</li>
-              <li>• Jebakan: -5 poin</li>
-              <li>• Skor tidak bisa negatif</li>
-            </ul>
-          </div>
-        </Card>
-
-        {/* Game Area Placeholder */}
-        <Card className="bg-gray-50 border-dashed">
-          <div className="text-center py-16">
-            <p className="text-muted mb-4">
-              Game area akan ditampilkan di sini
-            </p>
-            <Badge variant="warning">Fitur dalam pengembangan</Badge>
-          </div>
-        </Card>
-
-        {/* Controls */}
-        <div className="flex justify-center mt-6">
-          <Button size="lg" icon={Play} disabled>
-            Mulai Game
-          </Button>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-border">
-          <Button variant="ghost" as="link" to="/rules">
-            Kembali ke Aturan
-          </Button>
-          <Button variant="secondary" as="link" to="/play/memory" disabled>
-            Game Berikutnya
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
+  const game = useGameSession('reflex')
+  const [round, setRound] = useState(0); const [hit, setHit] = useState(0); const [trap, setTrap] = useState(0); const [left, setLeft] = useState(40); const [target, setTarget] = useState(null); const startRef = useRef(0); const finishRef = useRef(false)
+  const finish = async (h = hit, t = trap) => { if (finishRef.current) return; finishRef.current = true; const missed = TOTAL - h; try { await game.submit({ metrics: { targets_hit: h, targets_missed: missed, traps_hit: t, duration_ms: elapsedMs(startRef.current) } }); } catch { finishRef.current = false } }
+  const next = () => { const isTrap = Math.random() < .25; setTarget({ x: 8 + Math.random() * 84, y: 12 + Math.random() * 76, trap: isTrap }); setRound((r) => r + 1) }
+  useEffect(() => { if (game.state === 'playing') { startRef.current = performance.now(); next() } }, [game.state])
+  useEffect(() => { if (game.state !== 'playing') return; const id = setInterval(() => { const remain = Math.max(0, 40 - Math.floor(elapsedMs(startRef.current) / 1000)); setLeft(remain); if (!remain || round >= TOTAL) finish() }, 250); return () => clearInterval(id) }, [game.state, round, hit, trap])
+  const click = () => { if (!target || round > TOTAL) return; if (target.trap) { const t = trap + 1; setTrap(t); next() } else { const h = hit + 1; setHit(h); if (round >= TOTAL) finish(h, trap); else next() } }
+  if (game.state === 'loading') return <Card className="max-w-xl mx-auto mt-8 text-center">Memuat progres...</Card>
+  if (game.state === 'error') return <Card className="max-w-xl mx-auto mt-8 text-center"><p className="text-red-600 mb-4">{game.error}</p><Button onClick={() => game.refresh()}>Coba Lagi</Button></Card>
+  if (game.state === 'completed') return <Card className="max-w-xl mx-auto mt-8 text-center"><h1 className="text-2xl font-bold mb-3">Reflex Rush sudah selesai</h1><Button as="link" to="/play/memory">Lanjut ke Memory Rush</Button></Card>
+  if (game.state === 'ready') return <Card className="max-w-xl mx-auto mt-8 text-center"><Badge variant="primary">Game 1</Badge><h1 className="text-3xl font-bold mt-3 mb-3">Reflex Rush</h1><p className="text-muted mb-6">Klik target merah, hindari jebakan. 20 target dalam 40 detik.</p><Button size="lg" onClick={() => game.begin()}>Mulai Game</Button></Card>
+  if (game.state === 'submitting') return <Card className="max-w-xl mx-auto mt-8 text-center">Menyimpan hasil resmi...</Card>
+  return <div className="max-w-2xl mx-auto px-4 py-6"><div className="flex justify-between mb-4"><Badge variant="primary">Target {Math.min(round, TOTAL)}/{TOTAL}</Badge><strong className={left <= 5 ? 'text-red-600' : ''}>{left}s · {hit * 10 - trap * 5} poin</strong></div><Card className="relative h-[min(70vh,520px)] overflow-hidden bg-slate-100 touch-none" aria-label="Arena Reflex Rush"><button aria-label={target?.trap ? 'Jebakan' : 'Target'} onPointerDown={click} className={`absolute w-14 h-14 sm:w-16 sm:h-16 rounded-full shadow-lg transition-transform active:scale-90 ${target?.trap ? 'bg-slate-500' : 'bg-red-500'} text-white`} style={{ left: `${target?.x || 50}%`, top: `${target?.y || 50}%`, transform: 'translate(-50%, -50%)' }}>{target?.trap ? '×' : '★'}</button></Card></div>
 }

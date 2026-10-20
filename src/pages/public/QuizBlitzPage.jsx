@@ -1,90 +1,14 @@
+import { useEffect, useRef, useState } from 'react'
 import Card from '../../components/ui/Card'
-import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import { ListChecks, ArrowLeft, Play } from 'lucide-react'
-import { Link } from 'react-router-dom'
-
-export default function QuizBlitzPage() {
-  return (
-    <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Link to="/play/memory" className="text-muted hover:text-text transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <ListChecks className="w-5 h-5 text-blue-500" />
-            <span className="font-bold text-text">Quiz Blitz</span>
-            <Badge variant="primary">Game 3</Badge>
-          </div>
-          <div className="w-5" />
-        </div>
-
-        {/* Game Info Card */}
-        <Card className="text-center mb-6">
-          <div className="inline-flex p-4 rounded-full bg-blue-100 mb-4">
-            <ListChecks className="w-12 h-12 text-blue-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-text mb-2">Quiz Blitz</h1>
-          <p className="text-muted mb-6">
-            Jawab 10 pertanyaan pengetahuan umum secepat mungkin!
-          </p>
-          
-          <div className="flex justify-center gap-6 mb-6 text-sm">
-            <div>
-              <div className="text-2xl font-bold text-text">10</div>
-              <div className="text-muted">soal</div>
-            </div>
-            <div className="w-px bg-border" />
-            <div>
-              <div className="text-2xl font-bold text-text">~10</div>
-              <div className="text-muted">detik/soal</div>
-            </div>
-            <div className="w-px bg-border" />
-            <div>
-              <div className="text-2xl font-bold text-text">200</div>
-              <div className="text-muted">max poin</div>
-            </div>
-          </div>
-
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-left text-sm">
-            <p className="font-semibold text-amber-800 mb-1">Aturan:</p>
-            <ul className="text-amber-700 space-y-0.5">
-              <li>• Jawaban benar: +20 poin</li>
-              <li>• Tidak ada bonus kecepatan</li>
-              <li>• Waktu habis = salah</li>
-            </ul>
-          </div>
-        </Card>
-
-        {/* Game Area Placeholder */}
-        <Card className="bg-gray-50 border-dashed">
-          <div className="text-center py-16">
-            <p className="text-muted mb-4">
-              Quiz area akan ditampilkan di sini
-            </p>
-            <Badge variant="warning">Fitur dalam pengembangan</Badge>
-          </div>
-        </Card>
-
-        {/* Controls */}
-        <div className="flex justify-center mt-6">
-          <Button size="lg" icon={Play} disabled>
-            Mulai Game
-          </Button>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-border">
-          <Button variant="ghost" as="link" to="/play/memory">
-            Game Sebelumnya
-          </Button>
-          <Button variant="secondary" as="link" to="/result" disabled>
-            Lihat Hasil
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
-}
+import Badge from '../../components/ui/Badge'
+import { useGameSession, elapsedMs } from '../../hooks/useGameSession'
+export default function QuizBlitzPage(){const game=useGameSession('quiz'),[questions,setQuestions]=useState([]),[index,setIndex]=useState(0),[answers,setAnswers]=useState([]),[left,setLeft]=useState(10),questionStart=useRef(0),locked=useRef(false),timer=useRef(null)
+ const finish=async(a)=>game.submit({answers:a}); const answer=(selected)=>{if(locked.current)return;locked.current=true;clearInterval(timer.current);const q=questions[index], next=[...answers,{question_id:q.id,selected_index:selected,response_time_ms:Math.min(10000,elapsedMs(questionStart.current))}];setAnswers(next);if(index+1===questions.length)finish(next);else{setIndex(i=>i+1);setTimeout(()=>{locked.current=false;questionStart.current=performance.now()},250)}}
+ useEffect(()=>{if(game.state==='playing'&&game.session?.questions){setQuestions(game.session.questions);questionStart.current=performance.now();timer.current=setInterval(()=>{const v=Math.max(0,10-Math.floor(elapsedMs(questionStart.current)/1000));setLeft(v);if(!v){answer(-1)}},200)}return()=>clearInterval(timer.current)},[game.state,game.session,index])
+ if(game.state==='loading')return <Card className="max-w-xl mx-auto mt-8 text-center">Memuat progres...</Card>
+ if(game.state==='error')return <Card className="max-w-xl mx-auto mt-8 text-center"><p className="text-red-600 mb-4">{game.error}</p><Button onClick={()=>game.refresh()}>Coba Lagi</Button></Card>
+ if(game.state==='completed')return <Card className="max-w-xl mx-auto mt-8 text-center"><h1 className="text-2xl font-bold mb-4">Semua game selesai</h1><Button as="link" to="/result">Lihat hasil</Button></Card>
+ if(game.state==='ready')return <Card className="max-w-xl mx-auto mt-8 text-center"><Badge variant="primary">Game 3</Badge><h1 className="text-3xl font-bold my-3">Quiz Blitz</h1><p className="text-muted mb-6">10 soal, 10 detik per soal, tanpa bonus kecepatan.</p><Button size="lg" onClick={()=>game.begin()}>Mulai Game</Button></Card>
+ if(game.state==='submitting')return <Card className="max-w-xl mx-auto mt-8 text-center">Menyimpan hasil resmi...</Card>
+ const q=questions[index];return <div className="max-w-2xl mx-auto p-4"><div className="flex justify-between mb-4"><Badge variant="primary">Soal {index+1}/{questions.length}</Badge><strong className={left<=3?'text-red-600':''}>{left}s</strong></div><Card><h1 className="text-xl font-bold mb-6">{q?.question}</h1><div className="grid gap-3">{(Array.isArray(q?.options)?q.options:[]).map((option,i)=><button key={i} disabled={locked.current} onClick={()=>answer(i)} className="min-h-12 rounded-lg border border-border p-3 text-left hover:bg-primary/10 focus:ring-2 focus:ring-primary">{String.fromCharCode(65+i)}. {option}</button>)}</div></Card></div>}

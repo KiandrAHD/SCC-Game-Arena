@@ -14,14 +14,16 @@ Deno.serve(async (req) => {
   if (!p) return fail("Token tidak valid atau sudah expired", 401);
 
   const db = client();
-  const { data: results } = await db
+  const { data: results, error: resultsError } = await db
     .from("game_results")
     .select("game_key,score,accuracy,completed_at")
     .eq("participant_id", p.id);
-  const { data: sessions } = await db
+  if (resultsError) return fail("Gagal membaca hasil game", 500);
+  const { data: sessions, error: sessionsError } = await db
     .from("game_sessions")
     .select("game_key,status")
     .eq("participant_id", p.id);
+  if (sessionsError) return fail("Gagal membaca sesi game", 500);
 
   const resMap = Object.fromEntries(
     (results || []).map((r) => [r.game_key, r]),

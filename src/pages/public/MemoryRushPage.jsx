@@ -1,90 +1,20 @@
+import { useEffect, useRef, useState } from 'react'
 import Card from '../../components/ui/Card'
-import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
-import { Brain, ArrowLeft, Play } from 'lucide-react'
-import { Link } from 'react-router-dom'
-
+import Badge from '../../components/ui/Badge'
+import { useGameSession, elapsedMs } from '../../hooks/useGameSession'
+const tiles = [{name:'Lingkaran',c:'bg-red-500'},{name:'Kotak',c:'bg-blue-500'},{name:'Segitiga',c:'bg-amber-500'},{name:'Bintang',c:'bg-emerald-500'}]
 export default function MemoryRushPage() {
-  return (
-    <div className="min-h-[calc(100vh-4rem)] py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <Link to="/play/reflex" className="text-muted hover:text-text transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-purple-500" />
-            <span className="font-bold text-text">Memory Rush</span>
-            <Badge variant="primary">Game 2</Badge>
-          </div>
-          <div className="w-5" />
-        </div>
-
-        {/* Game Info Card */}
-        <Card className="text-center mb-6">
-          <div className="inline-flex p-4 rounded-full bg-purple-100 mb-4">
-            <Brain className="w-12 h-12 text-purple-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-text mb-2">Memory Rush</h1>
-          <p className="text-muted mb-6">
-            Ingat urutan warna yang muncul, lalu ulangi dengan benar!
-          </p>
-          
-          <div className="flex justify-center gap-6 mb-6 text-sm">
-            <div>
-              <div className="text-2xl font-bold text-text">8</div>
-              <div className="text-muted">ronde</div>
-            </div>
-            <div className="w-px bg-border" />
-            <div>
-              <div className="text-2xl font-bold text-text">3</div>
-              <div className="text-muted">nyawa</div>
-            </div>
-            <div className="w-px bg-border" />
-            <div>
-              <div className="text-2xl font-bold text-text">200</div>
-              <div className="text-muted">max poin</div>
-            </div>
-          </div>
-
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-left text-sm">
-            <p className="font-semibold text-amber-800 mb-1">Aturan:</p>
-            <ul className="text-amber-700 space-y-0.5">
-              <li>• Ronde benar: +25 poin</li>
-              <li>• Salah 3x = game over</li>
-              <li>• Pola semakin panjang setiap ronde</li>
-            </ul>
-          </div>
-        </Card>
-
-        {/* Game Area Placeholder */}
-        <Card className="bg-gray-50 border-dashed">
-          <div className="text-center py-16">
-            <p className="text-muted mb-4">
-              Game area akan ditampilkan di sini
-            </p>
-            <Badge variant="warning">Fitur dalam pengembangan</Badge>
-          </div>
-        </Card>
-
-        {/* Controls */}
-        <div className="flex justify-center mt-6">
-          <Button size="lg" icon={Play} disabled>
-            Mulai Game
-          </Button>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-border">
-          <Button variant="ghost" as="link" to="/play/reflex">
-            Game Sebelumnya
-          </Button>
-          <Button variant="secondary" as="link" to="/play/quiz" disabled>
-            Game Berikutnya
-          </Button>
-        </div>
-      </div>
-    </div>
-  )
+ const game=useGameSession('memory'), [round,setRound]=useState(1),[correct,setCorrect]=useState(0),[mistakes,setMistakes]=useState(0),[pattern,setPattern]=useState([]),[answer,setAnswer]=useState([]),[showing,setShowing]=useState(false),[lit,setLit]=useState(-1),start=useRef(0),done=useRef(false),timers=useRef([])
+ const clear=()=>{timers.current.forEach(clearTimeout);timers.current=[]}; useEffect(()=>()=>clear(),[])
+ const end=async(c=correct,m=mistakes)=>{if(done.current)return;done.current=true;try{await game.submit({metrics:{rounds_correct:c,mistakes:m,duration_ms:elapsedMs(start.current)}})}catch{done.current=false}}
+ const present=(r)=>{clear(); const p=Array.from({length:r+1},()=>Math.floor(Math.random()*4));setPattern(p);setAnswer([]);setShowing(true); p.forEach((v,i)=>timers.current.push(setTimeout(()=>setLit(v),500+i*700), i*700));timers.current.push(setTimeout(()=>{setLit(-1);setShowing(false)},p.length*700+200))}
+ useEffect(()=>{if(game.state==='playing'){start.current=performance.now();present(1)}},[game.state])
+ const choose=(v)=>{if(showing||done.current)return;const a=[...answer,v];setAnswer(a);if(v!==pattern[a.length-1]){const m=mistakes+1;setMistakes(m);if(m>=3)end(correct,m);else present(round);return}if(a.length===pattern.length){const c=correct+1;setCorrect(c);if(c>=8)end(c,mistakes);else {setRound(r=>r+1);timers.current.push(setTimeout(()=>present(round+1),500))}}}
+ if(game.state==='loading')return <Card className="max-w-xl mx-auto mt-8 text-center">Memuat progres...</Card>
+ if(game.state==='error')return <Card className="max-w-xl mx-auto mt-8 text-center"><p className="text-red-600 mb-4">{game.error}</p><Button onClick={()=>game.refresh()}>Coba Lagi</Button></Card>
+ if(game.state==='completed')return <Card className="max-w-xl mx-auto mt-8 text-center"><h1 className="text-2xl font-bold mb-4">Memory Rush sudah selesai</h1><Button as="link" to="/play/quiz">Lanjut ke Quiz Blitz</Button></Card>
+ if(game.state==='ready')return <Card className="max-w-xl mx-auto mt-8 text-center"><Badge variant="primary">Game 2</Badge><h1 className="text-3xl font-bold my-3">Memory Rush</h1><p className="text-muted mb-6">8 ronde. Pola berisi 2–9 simbol. Tiga kesalahan mengakhiri permainan.</p><Button size="lg" onClick={()=>game.begin()}>Mulai Game</Button></Card>
+ if(game.state==='submitting')return <Card className="max-w-xl mx-auto mt-8 text-center">Menyimpan hasil resmi...</Card>
+ return <div className="max-w-xl mx-auto p-4"><div className="flex justify-between mb-4"><Badge variant="primary">Ronde {round}/8</Badge><strong>{correct*25} poin · Kesalahan {mistakes}/3</strong></div><Card><p className="text-center mb-5 font-semibold" aria-live="polite">{showing?'Amati pola':'Ulangi pola'}</p><div className="grid grid-cols-2 gap-4">{tiles.map((t,i)=><button key={t.name} aria-label={t.name} disabled={showing} onClick={()=>choose(i)} className={`min-h-28 rounded-xl text-white font-bold text-lg touch-manipulation ${t.c} ${lit===i?'ring-8 ring-offset-4 ring-primary scale-105':'opacity-85'} disabled:opacity-70`}>{t.name}</button>)}</div></Card></div>
 }
