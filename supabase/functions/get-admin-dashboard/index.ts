@@ -12,23 +12,34 @@ Deno.serve(async (req) => {
   const db = client();
 
   // 1. Event
-  const { data: event } = await db
+  const { data: event, error: eventError } = await db
     .from("events")
     .select("id,name,status")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  const eventName = event?.name || "SCC Game Arena 2026";
-  const eventStatus = event?.status || "draft";
+  if (eventError) {
+    console.error("get-admin-dashboard event query failed", { code: eventError.code });
+    return fail("Gagal membaca event kompetisi", 500);
+  }
+  if (!event) return fail("Event kompetisi tidak ditemukan", 404);
+
+  const eventName = event.name;
+  const eventStatus = event.status;
 
   // 2. Statistics
-  const { data: participants } = await db
+  const { data: participants, error: participantsError } = await db
     .from("participants")
     .select("id,status")
-    .eq("event_id", event?.id || "");
+    .eq("event_id", event.id);
 
-  const allParts = participants || [];
+  if (participantsError) {
+    console.error("get-admin-dashboard participants query failed", { code: participantsError.code });
+    return fail("Gagal membaca peserta", 500);
+  }
+
+  const allParts = participants;
   const total = allParts.length;
   let completed = 0;
   let inProgress = 0;
@@ -44,13 +55,19 @@ Deno.serve(async (req) => {
   }
 
   // 3. Top 10 & Average Score from Leaderboard
-  const { data: lbData } = await db
+  const { data: lbData, error: leaderboardError } = await db
     .from("public_leaderboard")
     .select("rank,display_name,total_score")
+    .eq("event_id", event.id)
     .order("rank", { ascending: true })
     .limit(10);
 
-  const top10 = (lbData || []).map((row) => ({
+  if (leaderboardError) {
+    console.error("get-admin-dashboard leaderboard query failed", { code: leaderboardError.code });
+    return fail("Gagal membaca leaderboard", 500);
+  }
+
+  const top10 = lbData.map((row) => ({
     rank: Number(row.rank),
     display_name: row.display_name,
     total_score: Number(row.total_score),
@@ -59,10 +76,15 @@ Deno.serve(async (req) => {
   // Average score of completed participants
   let averageScore = 0;
   if (completed > 0) {
-    const { data: allScores } = await db
+    const { data: allScores, error: scoresError } = await db
       .from("public_leaderboard")
-      .select("total_score");
-    if (allScores && allScores.length > 0) {
+      .select("total_score")
+      .eq("event_id", event.id);
+    if (scoresError) {
+      console.error("get-admin-dashboard scores query failed", { code: scoresError.code });
+      return fail("Gagal membaca skor", 500);
+    }
+    if (allScores.length > 0) {
       const sum = allScores.reduce(
         (acc, curr) => acc + Number(curr.total_score || 0),
         0,
@@ -72,17 +94,27 @@ Deno.serve(async (req) => {
   }
 
   // 4. Recent activity: recent registrations + game completions
-  const { data: recentRegs } = await db
+  const { data: recentRegs, error: registrationsError } = await db
     .from("participants")
     .select("display_name,created_at")
+    .eq("event_id", event.id)
     .order("created_at", { ascending: false })
     .limit(5);
+  if (registrationsError) {
+    console.error("get-admin-dashboard registrations query failed", { code: registrationsError.code });
+    return fail("Gagal membaca pendaftaran terbaru", 500);
+  }
 
-  const { data: recentGames } = await db
+  const { data: recentGames, error: gamesError } = await db
     .from("game_results")
-    .select("game_key,score,completed_at,participants(display_name)")
+    .select("game_key,score,completed_at,participants!inner(display_name,event_id)")
+    .eq("participants.event_id", event.id)
     .order("completed_at", { ascending: false })
     .limit(5);
+  if (gamesError) {
+    console.error("get-admin-dashboard games query failed", { code: gamesError.code });
+    return fail("Gagal membaca hasil permainan terbaru", 500);
+  }
 
   const activities: Array<{
     type: string;
