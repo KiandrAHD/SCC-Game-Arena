@@ -9,6 +9,7 @@ export function useGameSession(gameKey) {
   const [error, setError] = useState('')
   const [session, setSession] = useState(null)
   const submittedRef = useRef(false)
+  const idempotencyKeyRef = useRef(null)
   const startedAtRef = useRef(0)
 
   const refresh = useCallback(async () => {
@@ -41,8 +42,14 @@ export function useGameSession(gameKey) {
     if (submittedRef.current) return null
     submittedRef.current = true; setState('submitting'); setError('')
     const storageKey = `scc_result_key_${gameKey}`
-    let key = sessionStorage.getItem(storageKey)
-    if (!key) { key = crypto.randomUUID(); sessionStorage.setItem(storageKey, key) }
+    let key = idempotencyKeyRef.current
+    try {
+      if (!key) key = sessionStorage.getItem(storageKey)
+      if (!key) { key = crypto.randomUUID(); sessionStorage.setItem(storageKey, key) }
+    } catch {
+      key = crypto.randomUUID()
+    }
+    idempotencyKeyRef.current = key
     try {
       const value = await submitGameResult(gameKey, { ...payload, idempotency_key: key })
       setState('completed'); setProgress((p) => p)

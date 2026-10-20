@@ -71,6 +71,16 @@ export function getPublicLeaderboard() {
   return invoke('get-public-leaderboard', { method: 'GET' })
 }
 
+export async function getAdminParticipants(payload = {}) {
+  const { data, error } = await supabase.functions.invoke('get-admin-participants', { body: payload })
+  if (error) {
+    let body = null
+    try { body = await error.context?.json() } catch { /* response may not be JSON */ }
+    throw new Error(body?.error || error.message || 'Request failed')
+  }
+  return data
+}
+
 export function userMessage(error) {
   if (error?.status === 409) return error.message || 'Data sudah terdaftar atau game sudah diselesaikan.'
   if (error?.status === 503) return 'Kompetisi sedang tidak menerima pendaftaran.'

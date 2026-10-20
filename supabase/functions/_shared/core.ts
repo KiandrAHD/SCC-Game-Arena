@@ -53,10 +53,10 @@ export async function body(req: Request) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 export function token(req: Request, b?: any) {
+  const bodyToken = b?.participant_token || b?.token;
+  if (typeof bodyToken === "string" && bodyToken.length >= 32) return bodyToken;
   const h = req.headers.get("authorization") || "";
-  return h.startsWith("Bearer ")
-    ? h.slice(7)
-    : b?.participant_token || b?.token;
+  return h.startsWith("Bearer ") ? h.slice(7) : null;
 }
 export async function participant(req: Request, b?: any) {
   const raw = token(req, b);

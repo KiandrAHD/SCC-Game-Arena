@@ -7,8 +7,10 @@ import { supabase } from '../../lib/supabase'
 
 async function adminCall(name, options = {}) {
   const { data, error } = await supabase.functions.invoke(name, options)
-  if (error) throw error
-  return data
+  if (!error) return data
+  let message = error.message || 'Request gagal'
+  try { const body = await error.context?.json(); message = body?.error || message } catch { /* response may not be JSON */ }
+  throw new Error(message)
 }
 
 export default function AdminParticipantsPage() {

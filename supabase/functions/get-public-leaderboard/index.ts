@@ -11,11 +11,11 @@ Deno.serve(async (req) => {
   const limit = Math.max(1, Math.min(300, Number.isInteger(rawLimit) ? rawLimit : 100));
 
   const db = client();
-  const { data: event } = await db.from("events").select("id").eq("status", "open").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  const { data: event } = await db.from("events").select("id").in("status", ["open", "closed"]).order("created_at", { ascending: false }).limit(1).maybeSingle();
   if (!event) return json({ leaderboard: [], updated_at: new Date().toISOString() });
   const { data, error } = await db
     .from('public_leaderboard')
-    .select('rank,display_name,class_name,total_score,average_accuracy')
+    .select('rank,display_name,class_name,total_score,average_accuracy,completed_games,is_complete')
     .eq('event_id', event.id)
     .order('rank', { ascending: true })
     .limit(limit);
@@ -29,7 +29,9 @@ Deno.serve(async (req) => {
     display_name: row.display_name,
     class_name: row.class_name,
     total_score: Number(row.total_score),
-    average_accuracy: Number(row.average_accuracy)
+    average_accuracy: Number(row.average_accuracy),
+    completed_games: Number(row.completed_games),
+    is_complete: Boolean(row.is_complete)
   }));
 
   return json({
