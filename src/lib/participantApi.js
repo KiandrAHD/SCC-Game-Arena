@@ -21,12 +21,12 @@ export function getParticipantToken() {
 
 export function saveParticipantToken(token) {
   if (typeof token !== 'string' || !token) return
-  getStorage('localStorage')?.setItem(TOKEN_KEY, token)
+  try { getStorage('localStorage')?.setItem(TOKEN_KEY, token) } catch { /* storage may be unavailable */ }
 }
 
 export function clearParticipantToken() {
-  getStorage('localStorage')?.removeItem(TOKEN_KEY)
-  getStorage('sessionStorage')?.removeItem(TOKEN_KEY)
+  try { getStorage('localStorage')?.removeItem(TOKEN_KEY) } catch { /* storage may be unavailable */ }
+  try { getStorage('sessionStorage')?.removeItem(TOKEN_KEY) } catch { /* storage may be unavailable */ }
 }
 
 async function invoke(name, options = {}) {

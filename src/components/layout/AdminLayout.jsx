@@ -15,9 +15,9 @@ import { supabase } from '../../lib/supabase'
 const navItems = [
   { path: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { path: '/admin/participants', label: 'Peserta', icon: Users },
+  { path: '/admin/activities', label: 'Aktivitas Peserta', icon: Activity },
   { path: '/admin/results', label: 'Hasil', icon: Trophy },
   { path: '/admin/settings', label: 'Pengaturan', icon: Settings },
-  { path: '/admin/activities', label: 'Aktivitas Peserta', icon: Activity },
 ]
 
 async function getAdminState(user) {
