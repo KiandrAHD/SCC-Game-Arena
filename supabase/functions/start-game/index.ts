@@ -1,4 +1,4 @@
-import { json as rawJson, fail as rawFail, cors, client, participant } from "../_shared/core.ts";
+import { json as rawJson, fail as rawFail, cors, client, participant, logParticipantActivity } from "../_shared/core.ts";
 Deno.serve(async (req) => {
   const json = (payload: unknown, status = 200) => rawJson(payload, status, req);
   const fail = (message: string, status = 400, details?: unknown) => rawFail(message, status, details, req);
@@ -125,6 +125,7 @@ Deno.serve(async (req) => {
   const { error: participantUpdateError } = await db.from("participants").update({ status: nextStatus }).eq("id", p.id);
   if (participantUpdateError) return fail("Gagal memperbarui status peserta", 500);
 
+  try { await logParticipantActivity(req, { event_id: p.event_id, participant_id: p.id, actor_type: "participant", activity_type: "game_started", game_key: gameKey, status: nextStatus }); } catch { return fail("Gagal mencatat awal sesi", 500); }
   if (gameKey === "quiz") {
     return json({
       session_id: session.id,

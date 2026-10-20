@@ -94,6 +94,12 @@ export async function admin(req: Request) {
   return data ? user : null;
 }
 export const gameOrder = ["reflex", "memory", "quiz"];
+export async function logParticipantActivity(req: Request, value: { event_id?: string; participant_id?: string | null; actor_type: "participant" | "admin"; actor_admin_id?: string | null; activity_type: string; game_key?: string | null; status?: string | null; metadata?: Record<string, unknown> }) {
+  const userAgent = req.headers.get("user-agent") || "";
+  const device_summary = /Mobile|Android|iPhone/i.test(userAgent) ? "mobile" : "desktop";
+  const { error } = await client().from("participant_activity").insert({ ...value, device_summary, metadata: value.metadata || {} });
+  if (error) throw error;
+}
 export function score(game: string, m: any, answers: any[] = []) {
   if (game === "reflex") {
     if (

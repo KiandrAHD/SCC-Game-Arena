@@ -2,22 +2,31 @@ import { supabase } from './supabase'
 
 const TOKEN_KEY = 'scc_game_participant_token'
 
-function storage() {
-  return typeof window === 'undefined' ? null : window.localStorage
+function getStorage(kind) {
+  if (typeof window === 'undefined') return null
+  try { return window[kind] } catch { return null }
 }
 
 export function getParticipantToken() {
-  const persistent = storage()
-  return persistent?.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY)
+  const persistent = getStorage('localStorage')
+  const legacy = getStorage('sessionStorage')
+  const token = persistent?.getItem(TOKEN_KEY)
+  if (token) return token
+  const oldToken = legacy?.getItem(TOKEN_KEY)
+  if (oldToken && persistent) {
+    try { persistent.setItem(TOKEN_KEY, oldToken); legacy.removeItem(TOKEN_KEY) } catch { /* storage may be unavailable */ }
+  }
+  return oldToken || null
 }
 
 export function saveParticipantToken(token) {
-  if (typeof token === 'string' && token) storage()?.setItem(TOKEN_KEY, token)
+  if (typeof token !== 'string' || !token) return
+  getStorage('localStorage')?.setItem(TOKEN_KEY, token)
 }
 
 export function clearParticipantToken() {
-  storage()?.removeItem(TOKEN_KEY)
-  sessionStorage.removeItem(TOKEN_KEY)
+  getStorage('localStorage')?.removeItem(TOKEN_KEY)
+  getStorage('sessionStorage')?.removeItem(TOKEN_KEY)
 }
 
 async function invoke(name, options = {}) {

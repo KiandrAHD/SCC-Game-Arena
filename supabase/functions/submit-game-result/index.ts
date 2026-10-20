@@ -5,6 +5,7 @@ import {
   client,
   participant,
   score as calculateScore,
+  logParticipantActivity,
 } from "../_shared/core.ts";
 
 Deno.serve(async (req) => {
@@ -195,6 +196,8 @@ Deno.serve(async (req) => {
     return fail("Gagal menyimpan hasil permainan", 500);
   }
 
+  try { await logParticipantActivity(req, { event_id: p.event_id, participant_id: p.id, actor_type: "participant", activity_type: "game_result_saved", game_key: gameKey, status: "completed" }); } catch { return fail("Hasil tersimpan tetapi aktivitas gagal dicatat", 500); }
+  if (gameKey === "quiz") { try { await logParticipantActivity(req, { event_id: p.event_id, participant_id: p.id, actor_type: "participant", activity_type: "competition_completed", status: "completed" }); } catch { return fail("Hasil tersimpan tetapi aktivitas gagal dicatat", 500); } }
   return json({
     success: true,
     score: completedResult.score,

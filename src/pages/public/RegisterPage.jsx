@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -27,6 +27,7 @@ export default function RegisterPage() {
   })
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const submitLock = useRef(false)
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -67,6 +68,8 @@ export default function RegisterPage() {
     e.preventDefault()
     if (!validate()) return
 
+    if (submitLock.current) return
+    submitLock.current = true
     setIsSubmitting(true)
     setErrors({})
     try {
@@ -86,6 +89,7 @@ export default function RegisterPage() {
         form: details.full_name || details.attendance_number || details.class_name || userMessage(error),
       })
     } finally {
+      submitLock.current = false
       setIsSubmitting(false)
     }
   }
