@@ -21,21 +21,24 @@ Deno.serve(async (req) => {
       return fail("Validasi gagal", 400, { class_name: "Kelas wajib diisi" });
 
     const db = client();
-    const { data: event } = await db
+    const { data: event, error: eventError } = await db
       .from("events")
       .select("id,status,allowed_classes,attendance_min,attendance_max")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
+    if (eventError) return fail("Gagal memeriksa status kompetisi", 500);
     if (!event || event.status !== "open")
       return fail("Kompetisi tidak menerima pendaftaran", 503);
-    const { data: setting } = await db
+    const { data: setting, error: settingError } = await db
       .from("competition_settings")
       .select("registration_open")
       .eq("event_id", event.id)
       .maybeSingle();
-    if (setting && !setting.registration_open)
+    if (settingError) return fail("Gagal memeriksa pengaturan kompetisi", 500);
+    if (!setting || !setting.registration_open) {
       return fail("Kompetisi tidak menerima pendaftaran", 503);
+    }
     if (!event.allowed_classes.includes(cls))
       return fail("Validasi gagal", 400, { class_name: "Kelas tidak valid" });
     if (att < event.attendance_min || att > event.attendance_max)

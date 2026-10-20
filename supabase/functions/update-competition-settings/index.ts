@@ -19,21 +19,29 @@ Deno.serve(async (req) => {
   const db = client();
 
   // Find latest active event
-  const { data: event } = await db
+  const { data: event, error: eventError } = await db
     .from("events")
     .select("id,status")
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
+  if (eventError) return fail("Gagal membaca event kompetisi", 500);
   if (!event) return fail("Event tidak ditemukan", 404);
 
   // Validate status if provided
   if (b?.status !== undefined) {
-    if (!["draft", "open", "closed"].includes(b.status)) {
-      return fail("Status event tidak valid", 400);
+    if (!["draft", "open", "closed"].includes(b.status)) return fail("Status event tidak valid", 400);
+    if (typeof b.registration_open !== "boolean" || b.registration_open !== (b.status === "open")) {
+      return fail("Status dan pendaftaran tidak konsisten", 400);
     }
-    await db.from("events").update({ status: b.status }).eq("id", event.id);
+    const { data: statusRows, error: statusError } = await db.rpc("update_competition_status", {
+      p_event_id: event.id,
+      p_status: b.status,
+      p_registration_open: b.registration_open,
+      p_admin_id: adm.id,
+    });
+    if (statusError || !statusRows?.[0]) return fail("Gagal memperbarui status kompetisi", 500);
   }
 
   // Build competition_settings updates
