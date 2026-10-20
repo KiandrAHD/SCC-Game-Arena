@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const allowedOrigins = new Set(
-  (Deno.env.get("FRONTEND_ORIGINS") || "http://localhost:5173")
+  (Deno.env.get("FRONTEND_ORIGINS") ||
+    "http://localhost:5173,https://scc-game-arena.vercel.app")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean),
@@ -8,7 +9,7 @@ const allowedOrigins = new Set(
 const corsHeaders = (req: Request): HeadersInit => {
   const origin = req.headers.get("Origin");
   const headers: Record<string, string> = {
-    "Access-Control-Allow-Headers": "authorization, content-type, idempotency-key",
+    "Access-Control-Allow-Headers": "authorization, apikey, x-client-info, content-type, idempotency-key, x-supabase-api-version",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     Vary: "Origin",
   };
@@ -18,13 +19,13 @@ const corsHeaders = (req: Request): HeadersInit => {
   return headers;
 };
 export const cors = corsHeaders;
-export const json = (body: unknown, status = 200, req?: Request) =>
+export const json = (body: unknown, status = 200, req: Request) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders(req || new Request("http://localhost")), "Content-Type": "application/json" },
+    headers: { ...corsHeaders(req), "Content-Type": "application/json" },
   });
-export const fail = (error: string, status = 400, details?: unknown) =>
-  json({ error, ...(details ? { details } : {}) }, status);
+export const fail = (error: string, status = 400, details?: unknown, req?: Request) =>
+  json({ error, ...(details ? { details } : {}) }, status, req || new Request("http://localhost"));
 export function client() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,

@@ -1,6 +1,8 @@
-import { json, fail, cors, client } from '../_shared/core.ts';
+import { json as rawJson, fail as rawFail, cors, client } from '../_shared/core.ts';
 
 Deno.serve(async (req) => {
+  const json = (payload: unknown, status = 200) => rawJson(payload, status, req);
+  const fail = (message: string, status = 400, details?: unknown) => rawFail(message, status, details, req);
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
   if (req.method !== 'GET') return fail('Method not allowed', 405);
 
